@@ -129,6 +129,8 @@ func addTask() {
 
 			if taskAgain == "Y" {
 				clearScreen()
+			print.Println(Yellow + "\n---Task Manager | Add a Task---\n" + Reset)
+
 				break
 			} else if taskAgain == "N" {
 				return
@@ -143,19 +145,105 @@ func pressAnyButton(){
 		reader := bufio.NewReader(os.Stdin)
 		reader.ReadString('\n')
 }
+func editTask(id int) {
+	// Find the task by ID (ID != slice index!)
+	index := -1
+	for i := range TasksSlice {
+		if TasksSlice[i].ID == id {
+			index = i
+			break
+		}
+	}
+	if index == -1 {
+		print.Println(Red + "Task not found!" + Reset)
+		time.Sleep(1 * time.Second)
+		return
+	}
+
+	// Show current task info
+	task := TasksSlice[index]
+	clearScreen()
+	print.Println(Yellow + "---Task Manager | Edit a Task---\n" + Reset)
+	print.Printf(Yellow+"Editing: %s\n", task.Title)
+	print.Printf("Assigned To: %s\n", task.AssignedTo)
+	print.Printf("Due Date: %s\n\n"+Reset, task.DueDate.Format("Jan 02, 2006"))
+
+	print.Println(Green + "1. Edit Title")
+	print.Println("2. Edit Assigned To")
+	print.Println("3. Edit Due Date")
+	print.Println("C. Cancel" + Reset)
+
+	reader := bufio.NewReader(os.Stdin)
+	print.Print(Blue + "\nChoice: " + Reset)
+	input, _ := reader.ReadString('\n')
+	input = strings.ToUpper(strings.TrimSpace(input))
+
+	switch input {
+	case "1":
+		print.Print(Yellow + "Enter new Title: " + Reset)
+		newVal, _ := reader.ReadString('\n')
+		TasksSlice[index].Title = strings.ToUpper(strings.TrimSpace(newVal))
+	case "2":
+		print.Print(Yellow + "Enter new Assigned To: " + Reset)
+		newVal, _ := reader.ReadString('\n')
+		TasksSlice[index].AssignedTo = strings.ToUpper(strings.TrimSpace(newVal))
+	case "3":
+		print.Print(Yellow + "Enter new Due Date (Jan 02, 2006): " + Reset)
+		newVal, _ := reader.ReadString('\n')
+		dueDate, err := time.Parse("Jan 02, 2006", strings.TrimSpace(newVal))
+		if err != nil {
+			print.Println(Red + "Wrong format!" + Reset)
+			time.Sleep(1 * time.Second)
+			return
+		}
+		TasksSlice[index].DueDate = dueDate
+	case "C":
+		return
+	default:
+		print.Println(Red + "Invalid choice!" + Reset)
+		time.Sleep(1 * time.Second)
+		return
+	}
+
+	saveTask()
+	print.Println(Green + "\nTask edited successfully!" + Reset)
+	pressAnyButton()
+	clearScreen()
+}
 func showAllTask() {
 	print.Println(Yellow + "---Task Manager | All Tasks---\n" + Reset)
-	if len(TasksSlice) > 0 {
-		for _, task := range TasksSlice {
-			print.Printf(Yellow+"ID: %v, Title: %v, Assigned To: %v, Due Date: %v\n\n", task.ID, task.Title, task.AssignedTo, task.DueDate.Format("Jan 02, 2006"))
-		}
-		pressAnyButton()
-		clearScreen()
-	} else {
+
+	if len(TasksSlice) == 0 {
 		print.Println(Red + "No Tasks Yet!\n" + Reset)
 		pressAnyButton()
 		clearScreen()
+		return
 	}
+
+	for _, task := range TasksSlice {
+		print.Printf(Yellow+"ID: %v, Title: %v, Assigned To: %v, Due Date: %v\n\n",
+			task.ID, task.Title, task.AssignedTo, task.DueDate.Format("Jan 02, 2006"))
+	}
+
+	print.Println(Green + "Enter task ID to edit, or C to cancel." + Reset)
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	input = strings.ToUpper(strings.TrimSpace(input))
+
+	if input == "C" {
+		clearScreen()
+		return
+	}
+
+	taskID, err := strconv.Atoi(input)
+	if err != nil {
+		print.Println(Red + "Invalid! Enter a number." + Reset)
+		time.Sleep(1 * time.Second)
+		clearScreen()
+		return
+	}
+
+	editTask(taskID)
 }
 func deleteTask() {
 	reader := bufio.NewReader(os.Stdin)
@@ -170,12 +258,12 @@ func deleteTask() {
 				task.ID, task.Title, task.AssignedTo, task.DueDate.Format("Jan 02, 2006"))
 		}
 
-		print.Print(Blue + "Enter the ID to delete (or 'Q' to go back): " + Reset)
+		print.Print(Blue + "Enter the ID to delete (or 'C' to cancel): " + Reset)
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
 
-		// Let them quit
-		if strings.ToUpper(input) == "Q" {
+		// Let them cancel
+		if strings.ToUpper(input) == "C" {
 			return
 		}
 
@@ -246,6 +334,7 @@ func main() {
 		case "D":
 			if len(TasksSlice) > 0 {
 				deleteTask()
+				clearScreen()
 			}else{
 				clearScreen()
 			print.Println("Wrong Input.")
